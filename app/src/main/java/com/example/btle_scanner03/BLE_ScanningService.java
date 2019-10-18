@@ -85,9 +85,6 @@ public class BLE_ScanningService extends Service {
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothLeScanner;
     private ScanCallback bleScanCallback;
-    private long scanPeriod;
-//    private HandlerThread scanThread;
-//    private Handler scanHandler;
     private BroadcastReceiver receiver;
     private WifiManager wifiManager;
 
