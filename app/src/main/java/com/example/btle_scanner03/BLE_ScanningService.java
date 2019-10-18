@@ -101,7 +101,6 @@ public class BLE_ScanningService extends Service {
             update(dataString);
         }
     };
-
 //    private void setArrayListAndDeviceListFile() {
 //        arrayList.clear();
 //
