@@ -171,8 +171,6 @@ public class BLE_ScanningService extends Service {
 //        }
 //        Log.d(TAG,"FromZ sendData:  End");
 //    }
-//
-//
 //    private void setBle_deviceHashMap(BluetoothDevice device,int rssi){
 //        String address = device.getAddress();
 //        if(!ble_deviceHashMap.containsKey(address)) {
