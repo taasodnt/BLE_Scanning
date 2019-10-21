@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity{
     private static final int REQUEST_CODE = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
 //    private static final int MY_REQUEST_CODE = 3;
+    private static final String SERVICE_STATE = "SERVICE_STATE";
 
     private boolean serviceState;
     private Intent serviceIntent;
@@ -122,6 +123,18 @@ public class MainActivity extends AppCompatActivity{
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BLE_ScanningService.UPDATE_LIST_ACTION);
         registerReceiver(myReceiver,intentFilter);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(SERVICE_STATE,serviceState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        serviceState = savedInstanceState.getBoolean(SERVICE_STATE);
     }
 
     private void requestPermission() {
