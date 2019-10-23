@@ -188,7 +188,7 @@ public class BLE_ScanningService extends Service {
                     String tmpString = result.getDevice().getAddress() + " " + result.getRssi();
                     update(tmpString);
                     Log.d(TAG,tmpString);
-                    Log.d(TAG, "ScanCallbackCounter: " + SCANCALLBACK_COUNTER);
+                    Log.d(TAG, "ScanCallbackCounter: ");
                 }
 
                 @Override
