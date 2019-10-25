@@ -1,13 +1,11 @@
 package com.example.btle_scanner03;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -20,9 +18,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
@@ -30,19 +26,22 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-
-import static com.example.btle_scanner03.BLE_ScanningService.SERVICE_STATE_ON;
 
 public class MainActivity extends AppCompatActivity{
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    public static final String NORMAL_MODE = "NORMAL_MODE";
+    public  static final String FASTEST_MODE = "FASTEST_MODE";
+    public static final String SCAN_MODE_PACKAGE = "SCAN_MODE_PACKAGE";
     private static final int REQUEST_CODE = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
-//    private static final int MY_REQUEST_CODE = 3;
+    //    private static final int MY_REQUEST_CODE = 3;
     private static final String SERVICE_STATE = "SERVICE_STATE";
 
     private boolean serviceState;
@@ -58,7 +57,26 @@ public class MainActivity extends AppCompatActivity{
     private WifiManager wifiManager;
 
     private ListView deviceListView;
-    private Button startAndStopBtn;
+    private RadioButton normalRadioButton;
+    private RadioButton fastestRadioButton;
+    private RadioGroup radioGroup;
+
+    private String scanningOption;
+
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            BLE_ScanningService.MyBinder myBinder = (BLE_ScanningService.MyBinder) iBinder;
+            serviceState = myBinder.getBLE_ScanningService().getCurrentState();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.d(TAG,"MainActiviy is disconnected");
+        }
+    };
+
 
 
     @Override
@@ -66,6 +84,10 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        normalRadioButton = findViewById(R.id.normal_radio_btn);
+        normalRadioButton.setChecked(true);
+        fastestRadioButton = findViewById(R.id.fastest_radio_btn);
+        radioGroup = findViewById(R.id.radio_btn_group);
 
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermission();
@@ -113,7 +135,6 @@ public class MainActivity extends AppCompatActivity{
         serviceIntent = new Intent(this,BLE_ScanningService.class);
 
         serviceState = false;
-        startAndStopBtn = (Button) findViewById(R.id.startAndStop);
         deviceListView = (ListView) findViewById(R.id.list_item);
 
         myReceiver = new MyReceiver();
@@ -169,14 +190,19 @@ public class MainActivity extends AppCompatActivity{
 
 
     public void startAndStop(View view) {
-        if(serviceState == false){
-            serviceState = true;
+        if(!BLE_ScanningService.SERVICE_STATE){
+            if(radioGroup.getCheckedRadioButtonId() == normalRadioButton.getId()){
+                serviceIntent.putExtra(SCAN_MODE_PACKAGE,NORMAL_MODE);
+            }else {
+                serviceIntent.putExtra(SCAN_MODE_PACKAGE,FASTEST_MODE);
+            }
+            BLE_ScanningService.SERVICE_STATE = true;
             Log.d(TAG,"Button Ok1");
             startService(serviceIntent);
-
+//            bindService(serviceIntent,serviceConnection,BIND_AUTO_CREATE);
         }else{
-            serviceState = false;
-
+            BLE_ScanningService.SERVICE_STATE = false;
+//            unbindService(serviceConnection);
             stopService(serviceIntent);
         }
     }
