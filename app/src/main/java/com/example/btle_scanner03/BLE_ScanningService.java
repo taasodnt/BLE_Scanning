@@ -1,7 +1,6 @@
 package com.example.btle_scanner03;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -20,16 +19,13 @@ import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,12 +35,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 
 import org.apache.http.HttpResponse;
@@ -64,11 +57,11 @@ public class BLE_ScanningService extends Service {
     private static int SCANCALLBACK_COUNTER = 0;
     private static final String START_SCANCALLBACK = "START SCAN";
     private static final String STOP_SCANCALLBACK = "STOP SCAN";
-//    private static final int SCAN_PERIOD = 4000;
+    //    private static final int SCAN_PERIOD = 4000;
     protected static final int REFRESH_DATA = 0x00000001;
     public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
     public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
-    public static boolean SERVICE_STATE_ON = false;
+    public static boolean SERVICE_STATE = false;
 
     private static final String TAG = BLE_ScanningService.class.getSimpleName();
     public static final String UPDATE_LIST_ACTION = "UPDATE_LIST_ACTION";
@@ -78,18 +71,32 @@ public class BLE_ScanningService extends Service {
 
     private List<ScanFilter> bleScanFilter;
 
-    private HashMap<String,BLE_Device> ble_deviceHashMap;
+//    private HashMap<String,BLE_Device> ble_deviceHashMap;
     private ArrayList<String> arrayList = new ArrayList<>();
-    private PrintStream printStream;
+//    private PrintStream printStream;
 
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothLeScanner;
     private ScanCallback bleScanCallback;
+    private ScanSettings bleScanSetting;
     private BroadcastReceiver receiver;
     private WifiManager wifiManager;
 
     private HashMap<String,BLE_Device> meanValueHashMap;
 
+    private MyBinder myBinder = new MyBinder();
+
+
+
+    public class MyBinder extends Binder {
+        BLE_ScanningService getBLE_ScanningService() {
+            return BLE_ScanningService.this;
+        }
+    }
+
+    public boolean getCurrentState() {
+        return SERVICE_STATE;
+    }
 
     private BluetoothAdapter.LeScanCallback leScanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
@@ -101,7 +108,9 @@ public class BLE_ScanningService extends Service {
             update(dataString);
         }
     };
-//    private void setArrayListAndDeviceListFile() {
+
+
+    //    private void setArrayListAndDeviceListFile() {
 //        arrayList.clear();
 //
 //        for(String ble_deviceAddress: ble_deviceHashMap.keySet()) {
@@ -188,7 +197,6 @@ public class BLE_ScanningService extends Service {
                     String tmpString = result.getDevice().getAddress() + " " + result.getRssi();
                     update(tmpString);
                     Log.d(TAG,tmpString);
-                    Log.d(TAG, "ScanCallbackCounter: ");
                 }
 
                 @Override
@@ -216,41 +224,39 @@ public class BLE_ScanningService extends Service {
         }
         wifiManager = (WifiManager)getApplicationContext().getSystemService(WIFI_SERVICE);
         meanValueHashMap = new HashMap<>();
-        SERVICE_STATE_ON = true;
+        SERVICE_STATE = true;
 //        scanPeriod = SCAN_PERIOD;
-        ble_deviceHashMap = new HashMap<>();
-        try {
-            printStream = new PrintStream(openFileOutput("DeviceList.txt",MODE_PRIVATE));
-        } catch (FileNotFoundException e) {
-            Log.d(TAG,"Output Error!");
-            e.printStackTrace();
-        }
+//        ble_deviceHashMap = new HashMap<>();
+//        try {
+//            printStream = new PrintStream(openFileOutput("DeviceList.txt",MODE_PRIVATE));
+//        } catch (FileNotFoundException e) {
+//            Log.d(TAG,"Output Error!");
+//            e.printStackTrace();
+//        }
         setBleScanFilter();
 
-        IntentFilter scanWifiFilter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Log.d(TAG,"Receiver get called");
-                String action = intent.getAction();
-                if(action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION){
-                    if(wifiManager.getScanResults().size() != 0) {
-                        for(ScanResult result: wifiManager.getScanResults()) {
-                            //TODO 回傳wifi掃描結果
+//        IntentFilter scanWifiFilter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+//        receiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                Log.d(TAG,"Receiver get called");
+//                String action = intent.getAction();
+//                if(action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION){
+//                    if(wifiManager.getScanResults().size() != 0) {
+//                        for(ScanResult result: wifiManager.getScanResults()) {
+//                            //TODO 回傳wifi掃描結果
 //                            String SSID = result.SSID;
 //                            Log.d(TAG,SSID);
-                        }
-                    }else{
-                        Log.d(TAG,"Result is empty");
-                    }
-                    Log.d(TAG,"Receiver is finishing");
+//                        }
+//                    }else{
+//                        Log.d(TAG,"Result is empty");
+//                    }
+//                    Log.d(TAG,"Receiver is finishing");
 //                    wifiManager.startScan();
-                }
-            }
-        };
+//                }
+//            }
+//        };
 //        registerReceiver(receiver,scanWifiFilter);
-
-        bleScanCallback = generateScanCallback();
 
         Log.d(TAG,"Service on create");
     }
@@ -258,23 +264,28 @@ public class BLE_ScanningService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 //            wifiManager.startScan();
-//        bluetoothAdapter.startLeScan(leScanCallback);
-        bluetoothLeScanner.startScan(bleScanFilter,generateScanSetting(),bleScanCallback);
+//        bluetoothAdapter.startLeScan(leScanCallback);3
+
+        String scan_mode = intent.getExtras().getString(MainActivity.SCAN_MODE_PACKAGE);
+        bleScanCallback = generateScanCallback();
+        bleScanSetting = generateScanSetting(scan_mode);
+        bluetoothLeScanner.startScan(bleScanFilter,bleScanSetting,bleScanCallback);
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onDestroy() {
 //        unregisterReceiver(receiver);
-//        bluetoothAdapter.stopLeScan(leScanCallback);
+//        bluetoothAdapter.stop
         bluetoothLeScanner.stopScan(bleScanCallback);
-        Log.d(TAG,"Service is stop");
+        SERVICE_STATE = false;
+        Log.d(TAG, "Service is stop");
         super.onDestroy();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return myBinder;
     }
 
 
@@ -292,10 +303,14 @@ public class BLE_ScanningService extends Service {
         startForeground(FOREGROUND_SERVICE_CHANNEL_ID,notification);
     }
 
-    private ScanSettings generateScanSetting(){
+    private ScanSettings generateScanSetting(String option){
         ScanSettings.Builder scanSettingBuilder = new ScanSettings.Builder();
-        scanSettingBuilder.setScanMode(ScanSettings.SCAN_MODE_BALANCED);
         scanSettingBuilder.setReportDelay(0);
+        if(option == MainActivity.NORMAL_MODE) {
+            scanSettingBuilder.setScanMode(ScanSettings.SCAN_MODE_BALANCED);
+        }else if(option == MainActivity.FASTEST_MODE){
+            scanSettingBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
+        }
         return scanSettingBuilder.build();
     }
 
